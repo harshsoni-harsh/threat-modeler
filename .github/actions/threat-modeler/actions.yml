@@ -1,0 +1,52 @@
+name: "CI Threat Modeler"
+description: "Generate SBOM, scan for vulnerabilities, and produce a threat model."
+inputs:
+  path:
+    description: "Path to scan"
+    required: false
+    default: "."
+  fail_on_severity:
+    description: "Fail workflow if vulnerabilities at or above this severity are found"
+    required: false
+    default: "CRITICAL"
+runs:
+  using: "composite"
+  steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: "3.x"
+
+    - name: Install Python dependencies
+      run: |
+        python3 -m pip install --upgrade pip
+        pip install -r requirements.txt
+
+    - name: Install syft
+      run: |
+        curl -sSfL https://get.anchore.io/syft | sudo sh -s -- -b /usr/local/bin
+
+    - name: Install trivy
+      run: |
+        curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin v0.41.0
+
+    - name: Generate SBOM
+      run: |
+        bash scripts/generate_sbom.sh "${{ inputs.path }}"
+
+    - name: Scan SBOM
+      run: |
+        bash scripts/scan_sbom.sh sbom.json
+
+    - name: Build Threat Model
+      run: |
+        python3 scripts/build_threat_model.py --vulns vulns.json --sbom sbom.json --output threat_model.json --project "${{ github.repository }}"
+
+    - name: Upload threat model artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: threat-model
+        path: threat_model.json

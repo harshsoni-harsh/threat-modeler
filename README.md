@@ -8,7 +8,7 @@ Automated **SBOM → Vulnerability Scan → Threat Model** pipeline as a **GitHu
 - Generate SBOM using [Syft](https://github.com/anchore/syft)
 - Scan SBOM with [Trivy](https://github.com/aquasecurity/trivy)
 - Map CVEs → CWEs → STRIDE threat categories
-- Produce `threat_model.json` (OTM-compatible)
+- Produce `threat_model.json`
 - Upload threat model as an artifact in CI/CD
 
 ---
@@ -26,6 +26,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Use CI Threat Modeler
-        uses: your-username/ci-threat-modeler/.github/actions/ci-threat-modeler@v1
+        uses: harshsoni-harsh/ci-threat-modeler/.github/actions/ci-threat-modeler@v1
         with:
           path: .

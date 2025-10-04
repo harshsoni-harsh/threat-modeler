@@ -13,37 +13,46 @@ runs:
   using: "composite"
   steps:
     - name: Checkout
-      uses: actions/checkout@v4
+      uses: actions/checkout@v5
 
     - name: Set up Python
-      uses: actions/setup-python@v5
+      uses: actions/setup-python@v6
       with:
-        python-version: "3.x"
+        python-version: "3.12.11"
+    
+    - run: echo "$HOME/.local/bin" >> $GITHUB_PATH
+      shell: bash
 
     - name: Install Python dependencies
       run: |
         python3 -m pip install --upgrade pip
-        pip install -r requirements.txt
+        pip install -r $GITHUB_ACTION_PATH/requirements.txt
+      shell: bash
 
     - name: Install syft
       run: |
-        curl -sSfL https://get.anchore.io/syft | sudo sh -s -- -b /usr/local/bin
+        curl -sSfL https://get.anchore.io/syft | sh -s -- -b $HOME/.local/bin
+      shell: bash
 
     - name: Install trivy
       run: |
-        curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin v0.41.0
+        curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b $HOME/.local/bin v0.66.0
+      shell: bash
 
     - name: Generate SBOM
       run: |
-        bash scripts/generate_sbom.sh "${{ inputs.path }}"
+        bash $GITHUB_ACTION_PATH/scripts/generate_sbom.sh "${{ inputs.path }}"
+      shell: bash
 
     - name: Scan SBOM
       run: |
-        bash scripts/scan_sbom.sh sbom.json
+        bash $GITHUB_ACTION_PATH/scripts/scan_sbom.sh sbom.json
+      shell: bash
 
     - name: Build Threat Model
       run: |
-        python3 scripts/build_threat_model.py --vulns vulns.json --sbom sbom.json --output threat_model.json --project "${{ github.repository }}"
+        python3 $GITHUB_ACTION_PATH/scripts/build_threat_model.py --vulns vulns.json --sbom sbom.json --output threat_model.json --project "${{ github.repository }}"
+      shell: bash
 
     - name: Upload threat model artifact
       uses: actions/upload-artifact@v4
